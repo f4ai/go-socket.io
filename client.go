@@ -92,20 +92,21 @@ func (c *Client) ReConnection() error {
 }
 
 func (c *Client) reconnect() error {
-	// reconnecting return
-	if c.reconnecting {
-		return nil
-	}
-	if c.backoff.attempts >= c.reconnectionAttempts {
-		c.backoff.Reset()
-		c.reconnecting = false
-		logger.Info("reconnect failed: reconnect times more than backoff attempts")
-		return errors.New("reconnect failed: reconnect times more than backoff attempts")
-	}
-	// Duration delay
-	delay := c.backoff.Duration()
-	c.reconnecting = true
 	for {
+		// reconnecting return
+		if c.reconnecting {
+			return nil
+		}
+		// reconnecting
+		c.reconnecting = true
+		// check attempts
+		if c.backoff.attempts >= c.reconnectionAttempts {
+			c.backoff.Reset()
+			c.reconnecting = false
+			return errors.New("reconnect failed: reconnect times more than backoff attempts")
+		}
+		// Duration delay
+		delay := c.backoff.Duration()
 		logger.Info(fmt.Sprintf("client will wait some %dms before reconnect attempt", time.Duration(delay)/time.Millisecond))
 		time.Sleep(time.Duration(delay))
 		// reconnect
@@ -157,12 +158,13 @@ func (c *Client) Connect() error {
 
 // Close closes server.
 func (c *Client) Close() error {
+	err := c.conn.Close()
 	if c.reconnection {
 		c.backoff.Reset()
-		c.reconnecting = false
 		return c.reconnect()
 	}
-	return c.conn.Close()
+	c.reconnecting = false
+	return err
 }
 
 func (c *Client) Emit(event string, args ...interface{}) {
@@ -197,7 +199,7 @@ func (c *Client) OnDisconnect(f func(Conn, string)) {
 		if c.reconnection {
 			err := c.reconnect()
 			if err != nil {
-				panic(err)
+				c.conn.onError(cc.Namespace(), err)
 			}
 		}
 	})
