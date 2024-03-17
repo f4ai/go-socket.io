@@ -32,15 +32,23 @@ type Client struct {
 	lock    sync.Mutex
 
 	reconnection         bool
+	skipReconnect        bool
 	reconnecting         bool
-	reconnectionDelay    int
-	reconnectionDelayMax int
 	reconnectionAttempts float64
+}
+
+type ClientOptions struct {
+	engineio.Options
+	Transports           []transport.Transport
+	Reconnection         bool
+	ReconnectionDelay    float64
+	ReconnectionDelayMax float64
+	ReconnectionAttempts float64
 }
 
 // NewClient returns a server
 // addr like http://asd.com:8080/{$namespace}
-func NewClient(addr string, opts *engineio.Options) (*Client, error) {
+func NewClient(addr string, opts *ClientOptions) (*Client, error) {
 	if addr == "" {
 		return nil, EmptyAddrErr
 	}
@@ -60,20 +68,26 @@ func NewClient(addr string, opts *engineio.Options) (*Client, error) {
 	}
 	// attempts
 	attempts, _ := strconv.ParseFloat("Infinity", 64)
+	if opts.ReconnectionAttempts > 0 {
+		attempts = opts.ReconnectionAttempts
+	}
 
 	return &Client{
 		namespace: namespace,
 		url:       u.String(),
 		handlers:  newNamespaceHandlers(),
-		opts:      opts,
+		opts: &engineio.Options{
+			Transports: opts.Transports,
+		},
 		backoff: NewBackOff(BackOff{
-			ms:       float64(3 * time.Second),
-			max:      float64(10 * time.Second),
+			ms:       opts.ReconnectionDelay,
+			max:      opts.ReconnectionDelayMax,
 			factor:   2,
-			jitter:   0.5,
+			jitter:   0.5, // opts.randomizationFactor
 			attempts: 0,
 		}),
-		reconnection:         true,
+		reconnection:         opts.Reconnection,
+		skipReconnect:        false,
 		reconnecting:         false,
 		reconnectionAttempts: attempts,
 	}, err
@@ -103,7 +117,7 @@ func (c *Client) reconnect() error {
 		if c.backoff.attempts >= c.reconnectionAttempts {
 			c.backoff.Reset()
 			c.reconnecting = false
-			return errors.New("reconnect failed: reconnect times more than backoff attempts")
+			panic(errors.New("reconnect failed: reconnect times more than backoff attempts"))
 		}
 		// Duration delay
 		delay := c.backoff.Duration()
@@ -112,8 +126,6 @@ func (c *Client) reconnect() error {
 		// reconnect
 		err := c.Connect()
 		if err == nil {
-			// reset
-			c.backoff.Reset()
 			c.reconnecting = false
 			break
 		}
@@ -140,9 +152,9 @@ func (c *Client) Connect() error {
 
 	c.conn = newConn(enginioCon, c.handlers)
 
-	if err := c.conn.connectClient(); err != nil {
+	if err := c.conn.connectClient(c); err != nil {
 		_ = c.Close()
-		if root, ok := c.handlers.Get(rootNamespace); ok && root.onError != nil {
+		if root, ok := c.handlers.Get(c.namespace); ok && root.onError != nil {
 			root.onError(nil, err)
 		}
 
@@ -159,8 +171,8 @@ func (c *Client) Connect() error {
 // Close closes server.
 func (c *Client) Close() error {
 	err := c.conn.Close()
-	if c.reconnection {
-		c.backoff.Reset()
+	c.backoff.Reset()
+	if c.reconnection && !c.skipReconnect {
 		return c.reconnect()
 	}
 	c.reconnecting = false
@@ -196,7 +208,7 @@ func (c *Client) OnDisconnect(f func(Conn, string)) {
 
 	h.OnDisconnect(func(cc Conn, s string) {
 		f(cc, s)
-		if c.reconnection {
+		if c.reconnection && !c.skipReconnect {
 			err := c.reconnect()
 			if err != nil {
 				c.conn.onError(cc.Namespace(), err)
@@ -292,7 +304,7 @@ func (c *Client) clientRead() {
 		var header parser.Header
 
 		if err := c.conn.decoder.DecodeHeader(&header, &event); err != nil {
-			c.conn.onError(rootNamespace, err)
+			c.conn.onError(c.namespace, err)
 
 			logger.Error("clientRead Error in Decoder", err)
 
@@ -308,9 +320,12 @@ func (c *Client) clientRead() {
 		case parser.Ack:
 			err = ackPacketHandler(c.conn, header)
 		case parser.Connect:
+			c.skipReconnect = false
 			err = clientConnectPacketHandler(c.conn, header)
 		case parser.Disconnect:
+			//c.skipReconnect = true
 			err = clientDisconnectPacketHandler(c.conn, header)
+			return
 		case parser.Event:
 			err = eventPacketHandler(c.conn, event, header)
 		default:
@@ -341,14 +356,14 @@ func (c *Client) getNamespace(ns string) *namespaceHandler {
 	return ret
 }
 
-func (c *conn) connectClient() error {
-	rootHandler, ok := c.handlers.Get(rootNamespace)
+func (c *conn) connectClient(client *Client) error {
+	rootHandler, ok := c.handlers.Get(client.namespace)
 	if !ok {
 		return errUnavailableRootHandler
 	}
 
-	root := newNamespaceConn(c, aliasRootNamespace, rootHandler.broadcast)
-	c.namespaces.Set(rootNamespace, root)
+	root := newNamespaceConn(c, client.namespace, rootHandler.broadcast)
+	c.namespaces.Set(client.namespace, root)
 
 	root.Join(root.Conn.ID())
 
@@ -357,7 +372,8 @@ func (c *conn) connectClient() error {
 	})
 
 	header := parser.Header{
-		Type: parser.Connect,
+		Type:      parser.Connect,
+		Namespace: client.namespace,
 	}
 
 	return c.encoder.Encode(header)
