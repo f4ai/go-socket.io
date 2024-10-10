@@ -6,7 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	socketio "github.com/xuzuxing/go-socket.io"
+	socketio "github.com/f4ai/go-socket.io"
 )
 
 func GinMiddleware(allowOrigin string) gin.HandlerFunc {

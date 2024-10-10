@@ -6,9 +6,9 @@ import (
 
 	"github.com/gomodule/redigo/redis"
 
-	"github.com/xuzuxing/go-socket.io/engineio"
-	"github.com/xuzuxing/go-socket.io/logger"
-	"github.com/xuzuxing/go-socket.io/parser"
+	"github.com/f4ai/go-socket.io/engineio"
+	"github.com/f4ai/go-socket.io/logger"
+	"github.com/f4ai/go-socket.io/parser"
 )
 
 // Server is a go-socket.io server.

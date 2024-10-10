@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/xuzuxing/go-socket.io/parser"
+	"github.com/f4ai/go-socket.io/parser"
 )
 
 type namespaceHandler struct {

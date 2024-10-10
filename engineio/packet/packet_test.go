@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/xuzuxing/go-socket.io/engineio/frame"
+	"github.com/f4ai/go-socket.io/engineio/frame"
 )
 
 func TestPacketType(t *testing.T) {

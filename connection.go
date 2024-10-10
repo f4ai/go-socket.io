@@ -8,8 +8,8 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/xuzuxing/go-socket.io/engineio"
-	"github.com/xuzuxing/go-socket.io/parser"
+	"github.com/f4ai/go-socket.io/engineio"
+	"github.com/f4ai/go-socket.io/parser"
 )
 
 // Conn is a connection in go-socket.io

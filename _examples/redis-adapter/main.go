@@ -1,12 +1,11 @@
 package main
 
 import (
+	socketio "github.com/f4ai/go-socket.io"
 	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-
-	socketio "github.com/xuzuxing/go-socket.io"
 )
 
 func main() {

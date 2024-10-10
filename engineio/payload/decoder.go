@@ -6,8 +6,8 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/xuzuxing/go-socket.io/engineio/frame"
-	"github.com/xuzuxing/go-socket.io/engineio/packet"
+	"github.com/f4ai/go-socket.io/engineio/frame"
+	"github.com/f4ai/go-socket.io/engineio/packet"
 )
 
 type byteReader interface {

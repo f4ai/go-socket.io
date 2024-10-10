@@ -13,9 +13,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/xuzuxing/go-socket.io/engineio/frame"
-	"github.com/xuzuxing/go-socket.io/engineio/packet"
-	"github.com/xuzuxing/go-socket.io/engineio/transport"
+	"github.com/f4ai/go-socket.io/engineio/frame"
+	"github.com/f4ai/go-socket.io/engineio/packet"
+	"github.com/f4ai/go-socket.io/engineio/transport"
 )
 
 func TestServerJSONP(t *testing.T) {

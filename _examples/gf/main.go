@@ -6,7 +6,7 @@ import (
 	"github.com/gogf/gf/frame/g"
 	"github.com/gogf/gf/net/ghttp"
 
-	socketio "github.com/xuzuxing/go-socket.io"
+	socketio "github.com/f4ai/go-socket.io"
 )
 
 func cors(r *ghttp.Request) {
