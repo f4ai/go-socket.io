@@ -117,7 +117,7 @@ func (c *Client) reconnect() error {
 		if c.backoff.attempts >= c.reconnectionAttempts {
 			c.backoff.Reset()
 			c.reconnecting = false
-			panic(errors.New("reconnect failed: reconnect times more than backoff attempts"))
+			return errors.New("reconnect failed: reconnect times more than backoff attempts")
 		}
 		// Duration delay
 		delay := c.backoff.Duration()
