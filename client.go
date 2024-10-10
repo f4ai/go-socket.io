@@ -32,7 +32,6 @@ type Client struct {
 	lock    sync.Mutex
 
 	reconnection         bool
-	skipReconnect        bool
 	reconnecting         bool
 	reconnectionAttempts float64
 }
@@ -87,7 +86,6 @@ func NewClient(addr string, opts *ClientOptions) (*Client, error) {
 			attempts: 0,
 		}),
 		reconnection:         opts.Reconnection,
-		skipReconnect:        false,
 		reconnecting:         false,
 		reconnectionAttempts: attempts,
 	}, err
@@ -114,10 +112,12 @@ func (c *Client) reconnect() error {
 		// reconnecting
 		c.reconnecting = true
 		// check attempts
+		logger.Info("c.backoff.attempts", c.backoff.attempts)
 		if c.backoff.attempts >= c.reconnectionAttempts {
-			c.backoff.Reset()
+			//c.backoff.Reset()
 			c.reconnecting = false
-			return errors.New("reconnect failed: reconnect times more than backoff attempts")
+			logger.Error("reconnect error", errors.New("reconnect failed: reconnect times more than backoff attempts"))
+			break
 		}
 		// Duration delay
 		delay := c.backoff.Duration()
@@ -171,11 +171,11 @@ func (c *Client) Connect() error {
 // Close closes server.
 func (c *Client) Close() error {
 	err := c.conn.Close()
-	c.backoff.Reset()
-	if c.reconnection && !c.skipReconnect {
-		return c.reconnect()
-	}
-	c.reconnecting = false
+	//c.backoff.Reset()
+	//if c.reconnection {
+	//	return c.reconnect()
+	//}
+	//c.reconnecting = false
 	return err
 }
 
@@ -207,13 +207,15 @@ func (c *Client) OnDisconnect(f func(Conn, string)) {
 	}
 
 	h.OnDisconnect(func(cc Conn, s string) {
-		f(cc, s)
-		if c.reconnection && !c.skipReconnect {
+		// The library must have retry first
+		if c.reconnection {
 			err := c.reconnect()
 			if err != nil {
 				c.conn.onError(cc.Namespace(), err)
 			}
 		}
+		// If cannot retry connect notify to handler
+		f(cc, s)
 	})
 
 }
@@ -320,10 +322,8 @@ func (c *Client) clientRead() {
 		case parser.Ack:
 			err = ackPacketHandler(c.conn, header)
 		case parser.Connect:
-			c.skipReconnect = false
 			err = clientConnectPacketHandler(c.conn, header)
 		case parser.Disconnect:
-			//c.skipReconnect = true
 			err = clientDisconnectPacketHandler(c.conn, header)
 			return
 		case parser.Event:

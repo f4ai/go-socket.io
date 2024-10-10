@@ -1,36 +1,72 @@
 package main
 
 import (
-	"log"
-	"time"
-
+	"fmt"
 	socketio "github.com/f4ai/go-socket.io"
+	"github.com/f4ai/go-socket.io/engineio"
+	"github.com/f4ai/go-socket.io/engineio/transport"
+	"github.com/f4ai/go-socket.io/engineio/transport/websocket"
+	"github.com/f4ai/go-socket.io/logger"
+	"time"
 )
 
 func main() {
-	// Simple client to talk to default-http example
-	uri := "http://127.0.0.1:8000"
+	//
+	connect()
+	select {}
+}
 
-	client, err := socketio.NewClient(uri, nil)
-	if err != nil {
-		panic(err)
-	}
+func connect() {
+	fmt.Println("Create new connection")
+	var opts = &socketio.ClientOptions{
 
-	// Handle an incoming event
-	client.OnEvent("reply", func(s socketio.Conn, msg string) {
-		log.Println("Receive Message /reply: ", "reply", msg)
+		//PingTimeout:  2000,
+		//PingInterval: 10000,
+		Transports:           []transport.Transport{websocket.Default},
+		ReconnectionAttempts: 3,
+		Reconnection:         true,
+		Options: engineio.Options{
+			Transports:   []transport.Transport{websocket.Default},
+			PingTimeout:  10 * time.Second,
+			PingInterval: 2 * time.Second,
+		},
+		//ReconnectionDelay: float64(20 * time.Second),
+	} // Tạo client Socket.IO
+	client, _ := socketio.NewClient("http://192.168.1.0:8082", opts)
+	//time.Sleep(5 * time.Second)
+	go manageClient(client)
+}
+
+func manageClient(client *socketio.Client) {
+	// Đăng ký sự kiện "connect"
+	client.OnConnect(func(conn socketio.Conn) error {
+		fmt.Println("Connected to server", conn.ID())
+		return nil
 	})
 
-	err = client.Connect()
-	if err != nil {
-		panic(err)
-	}
+	client.OnError(func(conn socketio.Conn, err error) {
+		fmt.Println("Main Error:", err)
+	})
 
-	client.Emit("notice", "hello")
+	client.OnDisconnect(func(conn socketio.Conn, s string) {
+		fmt.Println("Disconnected from server")
 
-	time.Sleep(1 * time.Second)
-	err = client.Close()
+		defer func() {
+			if err := client.Close(); err != nil {
+				logger.Error("close connect:", err)
+			}
+		}()
+		connect()
+	})
+
+	client.OnEvent("TASK_MANAGER_ASSIGN", func(s socketio.Conn, msg string) {
+		fmt.Println(msg)
+	})
+
+	err := client.Connect()
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		time.Sleep(2 * time.Second)
+		connect()
 	}
 }
