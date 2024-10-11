@@ -2,7 +2,6 @@ package socketio
 
 import (
 	"errors"
-	"fmt"
 	"github.com/f4ai/go-socket.io/engineio"
 	"github.com/f4ai/go-socket.io/engineio/transport"
 	"github.com/f4ai/go-socket.io/engineio/transport/polling"
@@ -14,7 +13,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 )
 
 var EmptyAddrErr = errors.New("empty addr")
@@ -99,42 +97,44 @@ func fmtNS(ns string) string {
 	return ns
 }
 
-func (c *Client) ReConnection() error {
-	return c.reconnect()
-}
-
-func (c *Client) reconnect() error {
-	for {
-		// reconnecting return
-		if c.reconnecting {
-			return nil
-		}
-		// reconnecting
-		c.reconnecting = true
-		// check attempts
-		logger.Info("c.backoff.attempts", c.backoff.attempts)
-		if c.backoff.attempts >= c.reconnectionAttempts {
-			//c.backoff.Reset()
-			c.reconnecting = false
-			logger.Error("reconnect error", errors.New("reconnect failed: reconnect times more than backoff attempts"))
-			break
-		}
-		// Duration delay
-		delay := c.backoff.Duration()
-		logger.Info(fmt.Sprintf("client will wait some %dms before reconnect attempt", time.Duration(delay)/time.Millisecond))
-		time.Sleep(time.Duration(delay))
-		// reconnect
-		err := c.Connect()
-		if err == nil {
-			c.reconnecting = false
-			break
-		}
-		logger.Error("reconnect failed: ", err)
-		// reset
-		c.reconnecting = false
-	}
-	return nil
-}
+//func (c *Client) ReConnection() error {
+//	return c.reconnect()
+//}
+//
+//func (c *Client) reconnect() error {
+//	for {
+//		// reconnecting return
+//		logger.Info("c.reconnecting", c.reconnecting)
+//		if c.reconnecting {
+//			return nil
+//		}
+//		// reconnecting
+//		c.reconnecting = true
+//		// check attempts
+//		logger.Info("c.backoff.attempts", c.backoff.attempts)
+//		if c.backoff.attempts >= c.reconnectionAttempts {
+//			//c.backoff.Reset()
+//			c.reconnecting = false
+//			logger.Error("reconnect error", errors.New("reconnect failed: reconnect times more than backoff attempts"))
+//			break
+//		}
+//		// Duration delay
+//		delay := c.backoff.Duration()
+//		logger.Info(fmt.Sprintf("client will wait some %dms before reconnect attempt", time.Duration(delay)/time.Millisecond))
+//		time.Sleep(time.Duration(delay))
+//		// reconnect
+//		err := c.Connect()
+//		if err == nil {
+//			logger.Info("never run function", c.reconnecting)
+//			c.reconnecting = false
+//			break
+//		}
+//		logger.Error("reconnect failed: ", err)
+//		// reset
+//		c.reconnecting = false
+//	}
+//	return nil
+//}
 
 func (c *Client) Connect() error {
 	dialer := engineio.Dialer{
@@ -171,11 +171,8 @@ func (c *Client) Connect() error {
 // Close closes server.
 func (c *Client) Close() error {
 	err := c.conn.Close()
-	//c.backoff.Reset()
-	//if c.reconnection {
-	//	return c.reconnect()
-	//}
-	//c.reconnecting = false
+	c.backoff.Reset()
+	c.reconnecting = false
 	return err
 }
 
@@ -206,18 +203,7 @@ func (c *Client) OnDisconnect(f func(Conn, string)) {
 		h = c.createNamespace(c.namespace)
 	}
 
-	h.OnDisconnect(func(cc Conn, s string) {
-		// The library must have retry first
-		if c.reconnection {
-			err := c.reconnect()
-			if err != nil {
-				c.conn.onError(cc.Namespace(), err)
-			}
-		}
-		// If cannot retry connect notify to handler
-		f(cc, s)
-	})
-
+	h.OnDisconnect(f)
 }
 
 // OnError set a handler function f to handle error for namespace.

@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	socketio "github.com/f4ai/go-socket.io"
-	"github.com/f4ai/go-socket.io/engineio"
 	"github.com/f4ai/go-socket.io/engineio/transport"
 	"github.com/f4ai/go-socket.io/engineio/transport/websocket"
 	"github.com/f4ai/go-socket.io/logger"
@@ -19,18 +18,7 @@ func main() {
 func connect() {
 	fmt.Println("Create new connection")
 	var opts = &socketio.ClientOptions{
-
-		//PingTimeout:  2000,
-		//PingInterval: 10000,
-		Transports:           []transport.Transport{websocket.Default},
-		ReconnectionAttempts: 3,
-		Reconnection:         true,
-		Options: engineio.Options{
-			Transports:   []transport.Transport{websocket.Default},
-			PingTimeout:  10 * time.Second,
-			PingInterval: 2 * time.Second,
-		},
-		//ReconnectionDelay: float64(20 * time.Second),
+		Transports: []transport.Transport{websocket.Default},
 	} // Tạo client Socket.IO
 	client, _ := socketio.NewClient("http://192.168.1.0:8082", opts)
 	//time.Sleep(5 * time.Second)
@@ -49,8 +37,6 @@ func manageClient(client *socketio.Client) {
 	})
 
 	client.OnDisconnect(func(conn socketio.Conn, s string) {
-		fmt.Println("Disconnected from server")
-
 		defer func() {
 			if err := client.Close(); err != nil {
 				logger.Error("close connect:", err)
