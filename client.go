@@ -44,7 +44,7 @@ type ClientOptions struct {
 	ReconnectionDelay    float64
 	ReconnectionDelayMax float64
 	ReconnectionAttempts float64
-	requestHeader        http.Header
+	RequestHeader        http.Header
 }
 
 // NewClient returns a server
@@ -90,7 +90,7 @@ func NewClient(addr string, opts *ClientOptions) (*Client, error) {
 		reconnection:         opts.Reconnection,
 		reconnecting:         false,
 		reconnectionAttempts: attempts,
-		requestHeader:        opts.requestHeader,
+		requestHeader:        opts.RequestHeader,
 	}, err
 }
 
