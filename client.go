@@ -2,17 +2,19 @@ package socketio
 
 import (
 	"errors"
+	"net/http"
+	"net/url"
+	"path"
+	"strconv"
+	"strings"
+	"sync"
+
 	"github.com/f4ai/go-socket.io/engineio"
 	"github.com/f4ai/go-socket.io/engineio/transport"
 	"github.com/f4ai/go-socket.io/engineio/transport/polling"
 	"github.com/f4ai/go-socket.io/engineio/transport/websocket"
 	"github.com/f4ai/go-socket.io/logger"
 	"github.com/f4ai/go-socket.io/parser"
-	"net/url"
-	"path"
-	"strconv"
-	"strings"
-	"sync"
 )
 
 var EmptyAddrErr = errors.New("empty addr")
@@ -32,7 +34,7 @@ type Client struct {
 	reconnection         bool
 	reconnecting         bool
 	reconnectionAttempts float64
-	requestHeader http.Header
+	requestHeader        http.Header
 }
 
 type ClientOptions struct {
@@ -42,7 +44,7 @@ type ClientOptions struct {
 	ReconnectionDelay    float64
 	ReconnectionDelayMax float64
 	ReconnectionAttempts float64
-	requestHeader http.Header
+	requestHeader        http.Header
 }
 
 // NewClient returns a server
@@ -88,7 +90,7 @@ func NewClient(addr string, opts *ClientOptions) (*Client, error) {
 		reconnection:         opts.Reconnection,
 		reconnecting:         false,
 		reconnectionAttempts: attempts,
-		requestHeader:				requestHeader
+		requestHeader:        opts.requestHeader,
 	}, err
 }
 
