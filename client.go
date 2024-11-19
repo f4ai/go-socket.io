@@ -32,6 +32,7 @@ type Client struct {
 	reconnection         bool
 	reconnecting         bool
 	reconnectionAttempts float64
+	requestHeader http.Header
 }
 
 type ClientOptions struct {
@@ -41,6 +42,7 @@ type ClientOptions struct {
 	ReconnectionDelay    float64
 	ReconnectionDelayMax float64
 	ReconnectionAttempts float64
+	requestHeader http.Header
 }
 
 // NewClient returns a server
@@ -86,6 +88,7 @@ func NewClient(addr string, opts *ClientOptions) (*Client, error) {
 		reconnection:         opts.Reconnection,
 		reconnecting:         false,
 		reconnectionAttempts: attempts,
+		requestHeader:				requestHeader
 	}, err
 }
 
@@ -145,7 +148,7 @@ func (c *Client) Connect() error {
 		dialer.Transports = c.opts.Transports
 	}
 
-	enginioCon, err := dialer.Dial(c.url, nil)
+	enginioCon, err := dialer.Dial(c.url, c.requestHeader)
 	if err != nil {
 		return err
 	}
