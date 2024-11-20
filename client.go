@@ -8,6 +8,7 @@ import (
 	"github.com/f4ai/go-socket.io/engineio/transport/websocket"
 	"github.com/f4ai/go-socket.io/logger"
 	"github.com/f4ai/go-socket.io/parser"
+	"net/http"
 	"net/url"
 	"path"
 	"strconv"
@@ -32,7 +33,7 @@ type Client struct {
 	reconnection         bool
 	reconnecting         bool
 	reconnectionAttempts float64
-	requestHeader http.Header
+	requestHeader        http.Header
 }
 
 type ClientOptions struct {
@@ -42,7 +43,7 @@ type ClientOptions struct {
 	ReconnectionDelay    float64
 	ReconnectionDelayMax float64
 	ReconnectionAttempts float64
-	requestHeader http.Header
+	RequestHeader        http.Header
 }
 
 // NewClient returns a server
@@ -88,7 +89,7 @@ func NewClient(addr string, opts *ClientOptions) (*Client, error) {
 		reconnection:         opts.Reconnection,
 		reconnecting:         false,
 		reconnectionAttempts: attempts,
-		requestHeader:				requestHeader
+		requestHeader:        opts.RequestHeader,
 	}, err
 }
 
