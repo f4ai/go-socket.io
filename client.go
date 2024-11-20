@@ -2,18 +2,19 @@ package socketio
 
 import (
 	"errors"
-	"github.com/f4ai/go-socket.io/engineio"
-	"github.com/f4ai/go-socket.io/engineio/transport"
-	"github.com/f4ai/go-socket.io/engineio/transport/polling"
-	"github.com/f4ai/go-socket.io/engineio/transport/websocket"
-	"github.com/f4ai/go-socket.io/logger"
-	"github.com/f4ai/go-socket.io/parser"
 	"net/http"
 	"net/url"
 	"path"
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/f4ai/go-socket.io/engineio"
+	"github.com/f4ai/go-socket.io/engineio/transport"
+	"github.com/f4ai/go-socket.io/engineio/transport/polling"
+	"github.com/f4ai/go-socket.io/engineio/transport/websocket"
+	"github.com/f4ai/go-socket.io/logger"
+	"github.com/f4ai/go-socket.io/parser"
 )
 
 var EmptyAddrErr = errors.New("empty addr")
